@@ -1,0 +1,1 @@
+Patient intake form submitted by John Smith on 2024-03-15. Contact email: john.smith@example.com, phone: 555-867-5309. The attending physician reviewed the case and recommended a follow-up appointment. Insurance ID: 4111-1111-1111-1111. All records are subject to HIPAA privacy regulations and must be handled accordingly by clinical staff.
