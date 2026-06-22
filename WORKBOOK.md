@@ -12,6 +12,63 @@ python3 -c "from kfp import compiler; from pipeline import pipeline; \
 
 ---
 
+## Implementation Notes (what was actually built here)
+
+### Dataset — CC News (`data_src/news_sample.jsonl`)
+
+80 Common Crawl News articles, ~344 KB, format: `{"id", "text", "title", "source", "date"}`.
+
+**Why CC News:**
+- Real-world journalism prose — high natural PII density (author bylines, quoted sources, named cities)
+- Wire-service syndication means genuine near-duplicates exist (same story, slightly different headline/lead)
+- Variable article length (~40–2395 words, mean 692) so quality filters see meaningful variance
+- Freely available, no license restrictions, representative of a real curation use case
+
+`config.yaml` uses `text_field: "text"` and `id_field: "id"` to map to this format.
+
+### `extract_text` — what was implemented
+
+Iterates all files in `raw/` by suffix:
+- **`.jsonl`** — reads line-by-line, parses with `json.loads`, pulls `input_text_field` and `input_id_field` keys, normalizes whitespace with `re.sub(r"\s+", " ", ...)` and `ftfy.fix_text()` for Unicode repair
+- **Everything else** — reads as plain text, applies the same `ftfy` + whitespace normalization
+
+**Why not `trafilatura` for html?** The CC News dataset is already extracted prose in JSONL — no HTML stripping needed. `trafilatura` is still available via `packages_to_install` for projects that start from raw HTML crawl output.
+
+**Expected output:** 80 → 80 (news_sample.jsonl: all records have non-empty text). The old `doc1.txt` / `doc2.txt` / `doc3.txt` test stubs are also in `data_src/` and will be extracted as plain text.
+
+### `quality_filter` — what was implemented
+
+**GPU path (cuDF):** builds a `cudf.DataFrame`, computes word count, mean word length, symbol ratio as vectorized cuDF string operations, applies threshold masks, converts back to pandas for JSON serialization.
+
+**CPU fallback:** pure-Python with a `_ok(r)` predicate that checks the same four heuristics including a hard-coded top-10 English stop-word set for the stop-word fraction check.
+
+The try/except on `import cudf` serves double duty: it tests whether arm64 RAPIDS wheels installed correctly on the DGX Spark, and logs which path was taken.
+
+**Expected output:** 80 → ~72–78 (short test stubs likely filtered; news articles mostly pass min_doc_length=50).
+
+### `deduplication` — what was implemented
+
+Two-pass strategy chosen to match what NeMo Curator's `ExactDuplicates` + `FuzzyDuplicates` does, but implemented in pure Python so it works regardless of RAPIDS availability:
+
+1. **Exact dedup** — MD5 hash of `text` field; keeps first occurrence. O(n).
+2. **Fuzzy dedup** — character n-gram MinHash LSH (n=5, 128 hashes, 32 bands × 4 rows). Groups candidates by band bucket, verifies with exact Jaccard on n-gram sets, marks duplicates above `fuzzy_jaccard_threshold=0.8`.
+
+The `import cudf` probe still runs at the top so you can confirm RAPIDS is importable even when the dedup logic doesn't use it.
+
+**Expected output:** ~1–3 exact dups removed (test stubs), ~2–5 fuzzy dups removed (wire-service stories). Final ~70–77 docs.
+
+### `pii_redaction` — what was implemented
+
+Direct presidio (Option B from the patterns below) — more explicit than NeMo Curator's `PiiModifier` and easier to debug when entities mismatch.
+
+Downloads `en_core_web_sm` at runtime via subprocess (not `en_core_web_lg` to keep container startup fast). Uses `AnalyzerEngine` + `AnonymizerEngine`; wraps each document in try/except so a single bad encoding won't abort the whole stage.
+
+The 5 configured entities (`PERSON`, `EMAIL_ADDRESS`, `PHONE_NUMBER`, `US_SSN`, `CREDIT_CARD`) are passed in from `config.yaml` via the `pii_entities` parameter (JSON-serialized list).
+
+**Expected output:** every doc processed, `n_pii` ≥ 50 (news articles are rich in person names).
+
+---
+
 ## 1. `extract_text` (CPU — `python:3.11-slim`)
 
 Reads raw files from `curator-input/{project}/raw/`, normalizes text, writes
