@@ -1,6 +1,6 @@
 # kfp-nemo-curator-verify
 
-[![Open in JupyterLab](https://img.shields.io/badge/Open%20in-JupyterLab-F37626?logo=jupyter&logoColor=white)](http://localhost:8888/lab/tree/git-miramar-labs-org/projects/kfp-nemo-curator-verify/notebook.ipynb)  [![Deploy to KFP](https://github.com/miramar-labs-org/kfp-nemo-curator-verify/actions/workflows/deploy-to-kfp.yaml/badge.svg)](https://github.com/miramar-labs-org/kfp-nemo-curator-verify/actions/workflows/deploy-to-kfp.yaml)  [![Undeploy from KFP](https://github.com/miramar-labs-org/kfp-nemo-curator-verify/actions/workflows/undeploy-from-kfp.yaml/badge.svg)](https://github.com/miramar-labs-org/kfp-nemo-curator-verify/actions/workflows/undeploy-from-kfp.yaml)
+[![Open in JupyterLab](https://img.shields.io/badge/Open%20in-JupyterLab-F37626?logo=jupyter&logoColor=white)](http://localhost:8888/lab/tree/git-miramar-labs-org/projects/kfp-nemo-curator-verify/notebook.ipynb)  [![Deploy to KFP](https://github.com/miramar-labs-org/kfp-nemo-curator-verify/actions/workflows/deploy-to-kfp.yaml/badge.svg)](https://github.com/miramar-labs-org/kfp-nemo-curator-verify/actions/workflows/deploy-to-kfp.yaml)  [![Undeploy from KFP](https://github.com/miramar-labs-org/kfp-nemo-curator-verify/actions/workflows/undeploy-from-kfp.yaml/badge.svg)](https://github.com/miramar-labs-org/kfp-nemo-curator-verify/actions/workflows/undeploy-from-kfp.yaml)  [![last run](https://img.shields.io/badge/last%20run-run--006%20PASS-brightgreen)](runs/RUNS.md)
 
 | | |
 | ----------- | -------------------------------------------------------------------- |
@@ -98,9 +98,10 @@ Key metrics logged per run:
 
 ## 6. GPU requirements
 
-`quality_filter` and `deduplication` require GPU and RAPIDS (cuDF). Both components install
-`nemo-curator[cuda12x]` from `https://pypi.nvidia.com` at startup. If arm64 pip wheels are
-unavailable, see the Fallback section in `WORKBOOK.md`.
+`quality_filter` and `deduplication` require GPU and RAPIDS (cuDF). Both components use
+`ghcr.io/miramar-labs-org/kfp-base-gpu:latest` which has `cudf-cu12`, `dask-cudf-cu12`,
+and `nemo-curator` pre-installed — no pip installs at runtime. To add packages, edit
+`kfp-images/gpu/Dockerfile` in the platform repo and trigger **Build KFP Base Images**.
 
 ---
 
