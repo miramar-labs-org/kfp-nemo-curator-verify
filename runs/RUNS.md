@@ -8,3 +8,6 @@
 | run-004 | 2026-06-23 | FAIL | 5 | 82 | 55,245 | — | ModuleNotFoundError: boto3 in curator_report (mlflow.log_dict removed) |
 | run-005 | 2026-06-23 | PASS | 5 | 82 | 55,245 | — | First full success — baseline run (inline pip installs) |
 | run-006 | 2026-06-23 | PASS | 5 | 82 | 55,245 | 615 | First run on pre-built kfp-base-cpu + kfp-base-gpu images; en_core_web_lg missing from CPU image (400MB download at runtime) |
+| run-007 | 2026-06-23 | FAIL | 5 | 82 | 55,245 | 615 | en_core_web_lg pre-bake confirmed ✓; mlflow.log_dict failed — MinIO credentials not in pod (NoCredentialsError) |
+| run-008 | 2026-06-23 | FAIL | 5 | 82 | 55,245 | 615 | Credentials fixed ✓; mlflow.log_dict failed — MinIO bucket `mlflow` does not exist (NoSuchBucket) |
+| run-009 | 2026-06-23 | PASS | 5 | 82 | 55,245 | 615 | All 6 stages complete; mlflow.log_dict artifact upload to MinIO confirmed working |
