@@ -98,9 +98,10 @@ Key metrics logged per run:
 
 ## 6. GPU requirements
 
-`quality_filter` and `deduplication` require GPU and RAPIDS (cuDF). Both components install
-`nemo-curator[cuda12x]` from `https://pypi.nvidia.com` at startup. If arm64 pip wheels are
-unavailable, see the Fallback section in `WORKBOOK.md`.
+`quality_filter` and `deduplication` require GPU and RAPIDS (cuDF). Both components use
+`ghcr.io/miramar-labs-org/kfp-base-gpu:latest` which has `cudf-cu12`, `dask-cudf-cu12`,
+and `nemo-curator` pre-installed — no pip installs at runtime. To add packages, edit
+`kfp-images/gpu/Dockerfile` in the platform repo and trigger **Build KFP Base Images**.
 
 ---
 
